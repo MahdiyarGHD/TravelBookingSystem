@@ -19,7 +19,8 @@ public class Endpoint : ICarterModule
                             origin: request.Origin,
                             destination: request.Destination,
                             departureDate: request.DepartureDate,
-                            arrivalDate: request.ArrivalDate
+                            arrivalDate: request.ArrivalDate,
+                            cancellationToken: cancellationToken
                     );
                     
                     return Results.Ok(flights);

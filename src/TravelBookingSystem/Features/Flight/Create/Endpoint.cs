@@ -22,7 +22,8 @@ public class Endpoint : ICarterModule
                         flightNumber: request.FlightNumber,
                         price: request.Price,
                         arrivalDate: request.ArrivalDate,
-                        departureDate: request.DepartureDate
+                        departureDate: request.DepartureDate,
+                        cancellationToken: cancellationToken
                         );
                     
                     return new CreateFlightResponse(flightId.ToString());
