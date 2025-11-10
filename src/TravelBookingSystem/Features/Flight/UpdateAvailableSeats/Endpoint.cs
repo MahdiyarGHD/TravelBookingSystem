@@ -15,7 +15,9 @@ public class Endpoint : ICarterModule
             .MapPatch("/update-available-seats",
                 async ([FromBody] UpdateAvailableSeatsRequest request, FlightService service, CancellationToken cancellationToken) =>
                 {
-                    await service.UpdateAvailableSeatsAsync(request.FlightId, request.AvailableSeats, cancellationToken);
+                    var flightId = Guid.Parse(request.FlightId);
+                    
+                    await service.UpdateAvailableSeatsAsync(flightId, request.AvailableSeats, cancellationToken);
                     return Results.Ok();
                 }).AddEndpointFilter<EndpointValidatorFilter<UpdateAvailableSeatsRequest>>();
     }

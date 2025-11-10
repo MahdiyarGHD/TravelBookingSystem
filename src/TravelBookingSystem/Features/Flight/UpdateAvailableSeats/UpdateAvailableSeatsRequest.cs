@@ -1,3 +1,3 @@
 namespace TravelBookingSystem.Features.Flight.UpdateAvailableSeats;
 
-public record UpdateAvailableSeatsRequest(Guid FlightId, int AvailableSeats);
+public record UpdateAvailableSeatsRequest(string FlightId, int AvailableSeats);

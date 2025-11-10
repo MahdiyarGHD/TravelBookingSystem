@@ -27,6 +27,6 @@ public class Endpoint : ICarterModule
                     );
 
                     return new BookSeatResponse(bookingId.ToString());
-                });
+                }).AddEndpointFilter<EndpointValidatorFilter<BookSeatRequest>>();;
     }
 }

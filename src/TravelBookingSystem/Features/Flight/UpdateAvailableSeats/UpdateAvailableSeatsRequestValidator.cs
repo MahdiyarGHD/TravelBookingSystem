@@ -7,7 +7,8 @@ public class UpdateAvailableSeatsRequestValidator : AbstractValidator<UpdateAvai
     public UpdateAvailableSeatsRequestValidator()
     {
         RuleFor(x => x.FlightId)
-            .NotEmpty();
+            .Must(x => Guid.TryParse(x, out _))
+            .WithMessage("Invalid flight id provided.");
         
         RuleFor(x => x.AvailableSeats)
             .GreaterThan(0);
