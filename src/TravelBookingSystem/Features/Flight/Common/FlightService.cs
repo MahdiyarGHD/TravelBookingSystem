@@ -1,5 +1,7 @@
+using System.Collections.Immutable;
 using Microsoft.EntityFrameworkCore;
 using TravelBookingSystem.Common.Persistence;
+using TravelBookingSystem.Features.Booking.Common;
 
 namespace TravelBookingSystem.Features.Flight.Common;
 
@@ -85,5 +87,32 @@ public class FlightService(TravelBookingDbContext dbContext)
 
         flight.UpdateAvailableSeats(newCapacity);
         await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<BookingDto>> GetBookingsAsync(
+        Guid flightId,
+        CancellationToken cancellationToken = default)
+    {
+        var flightExists = await _dbContext.Flights
+            .AsNoTracking()
+            .AnyAsync(f => f.Id == flightId, cancellationToken);
+
+        if (!flightExists)
+            throw new FlightNotFoundException(flightId);
+
+        var bookings = await _dbContext.Bookings
+            .AsNoTracking()
+            .Where(b => b.FlightId == flightId)
+            .Select(b => new BookingDto(
+                b.Id,
+                b.PassengerId,
+                b.Passenger.FullName,
+                b.FlightId,
+                b.SeatNumber,
+                b.BookingDate
+            ))
+            .ToListAsync(cancellationToken);
+
+        return bookings;
     }
 }
