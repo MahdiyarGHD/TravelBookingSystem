@@ -1,13 +1,15 @@
 using System.Collections.Immutable;
+using Medallion.Threading;
 using Microsoft.EntityFrameworkCore;
 using TravelBookingSystem.Common.Persistence;
 using TravelBookingSystem.Features.Booking.Common;
 
 namespace TravelBookingSystem.Features.Flight.Common;
 
-public class FlightService(TravelBookingDbContext dbContext)
+public class FlightService(TravelBookingDbContext dbContext, IDistributedLockProvider distributedLockProvider)
 {
     private readonly TravelBookingDbContext _dbContext = dbContext;
+    private readonly IDistributedLockProvider _distributedLockProvider = distributedLockProvider;
 
     public async Task<Guid> CreateAsync(
         int availableSeats, 
@@ -76,14 +78,19 @@ public class FlightService(TravelBookingDbContext dbContext)
 
     public async Task UpdateAvailableSeatsAsync(Guid flightId, int newCapacity, CancellationToken cancellationToken = default)
     {
+        var @lock = _distributedLockProvider.CreateLock($"flight-capacity:{flightId}");
+        await using var handle = await @lock.TryAcquireAsync(cancellationToken: cancellationToken);
+
+        if (handle is null)
+            throw new InvalidOperationException("Could not acquire lock for updating flight capacity. Please retry.");
+
         var flight = await _dbContext.Flights.FindAsync(flightId, cancellationToken);
-        if (flight is null) 
+        if (flight is null)
             throw new InvalidOperationException("Flight not found");
 
-        if (newCapacity < 0) 
-            throw new ArgumentException("Capacity must be non-negative");
-
-        // we will check bookings here to not exceed the new capacity after implementing it
+        var bookedCount = await _dbContext.Bookings.CountAsync(b => b.FlightId == flightId, cancellationToken);
+        if (bookedCount > newCapacity)
+            throw new ArgumentException("Capacity must be more than the number of booked flights");
 
         flight.UpdateAvailableSeats(newCapacity);
         await _dbContext.SaveChangesAsync(cancellationToken);
