@@ -1,4 +1,5 @@
 using ServiceCollector.Abstractions;
+using TravelBookingSystem.Features.Flight.Common;
 
 namespace TravelBookingSystem.Features.Flight;
 
@@ -11,7 +12,7 @@ public abstract class FeatureManager
     {
         public void AddServices(IServiceCollection serviceCollection)
         {
-            // serviceCollection.AddScoped<FlightService>();
+            serviceCollection.AddScoped<FlightService>();
         }
     }
 }

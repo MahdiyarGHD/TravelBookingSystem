@@ -25,6 +25,12 @@ public class FlightService(TravelBookingDbContext dbContext)
         if (departureDate >= arrivalDate) 
             throw new ArgumentException("Departure must be before arrival");
         
+        var exists = await _dbContext.Flights
+            .AnyAsync(f => f.FlightNumber == flightNumber);
+
+        if (exists)
+            throw new InvalidOperationException("Flight number already exists");
+        
         var flight = Flight.Create(
             flightNumber,
             origin,
