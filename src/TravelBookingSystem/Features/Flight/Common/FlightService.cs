@@ -83,7 +83,7 @@ public class FlightService(TravelBookingDbContext dbContext)
 
         // we will check bookings here to not exceed the new capacity after implementing it
 
-        flight.AvailableSeats = newCapacity;
+        flight.UpdateAvailableSeats(newCapacity);
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
 }

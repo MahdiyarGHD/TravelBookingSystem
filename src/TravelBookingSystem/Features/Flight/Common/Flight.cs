@@ -2,16 +2,16 @@ namespace TravelBookingSystem.Features.Flight.Common;
 
 public class Flight
 {
-    public Guid Id { get; set; }
-    public string FlightNumber { get; set; }
-    public string Origin { get; set; }
-    public string Destination { get; set; }
+    public Guid Id { get; private set; }
+    public string FlightNumber { get; private set; }
+    public string Origin { get; private set; }
+    public string Destination { get; private set; }
     
-    public DateTimeOffset DepartureTime { get; set; }
-    public DateTimeOffset ArrivalTime { get; set; }
+    public DateTimeOffset DepartureTime { get; private set; }
+    public DateTimeOffset ArrivalTime { get; private set; }
     
-    public int AvailableSeats { get; set; }
-    public decimal Price { get; set; }
+    public int AvailableSeats { get; private set; }
+    public decimal Price { get; private set; }
     
     public static Flight Create(
         string flightNumber,
@@ -33,5 +33,10 @@ public class Flight
             AvailableSeats = availableSeats,
             Price = price
         };
+    }
+
+    internal void UpdateAvailableSeats(int availableSeats)
+    {
+        AvailableSeats = availableSeats;
     }
 }
