@@ -1,5 +1,6 @@
 
 using Microsoft.EntityFrameworkCore;
+using TravelBookingSystem.Features.Booking.Common;
 using TravelBookingSystem.Features.Flight.Common;
 using TravelBookingSystem.Features.Passenger.Common;
 
@@ -14,6 +15,7 @@ public class TravelBookingDbContext : DbContext
     
     public DbSet<Flight> Flights => Set<Flight>();
     public DbSet<Passenger> Passengers => Set<Passenger>();
+    public DbSet<Booking> Bookings => Set<Booking>();
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

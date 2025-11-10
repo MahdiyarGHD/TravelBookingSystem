@@ -13,4 +13,8 @@ public static class TravelBookingDbContextSchema
     {
         public const string TableName = "Passengers";
     }
+    public static class Booking
+    {
+        public const string TableName = "Bookings";
+    }
 }

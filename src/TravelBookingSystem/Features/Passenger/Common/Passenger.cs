@@ -1,3 +1,5 @@
+using TravelBookingSystem.Features.Booking.Common;
+
 namespace TravelBookingSystem.Features.Passenger.Common;
 
 public class Passenger
@@ -7,6 +9,8 @@ public class Passenger
     public string Email { get; set; }
     public string PassportNumber { get; set; }
     public string? PhoneNumber { get; set; }
+    
+    public ICollection<Booking.Common.Booking> Bookings { get; set; }
     
     public static Passenger Create(
         string fullName,

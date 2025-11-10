@@ -13,6 +13,8 @@ public class Flight
     public int AvailableSeats { get; private set; }
     public decimal Price { get; private set; }
     
+    public ICollection<Booking.Common.Booking> Bookings { get; set; }
+    
     public static Flight Create(
         string flightNumber,
         string origin,
