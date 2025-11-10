@@ -14,7 +14,8 @@ public class FlightService(TravelBookingDbContext dbContext)
         string destination, 
         string origin, 
         DateTimeOffset departureDate, 
-        DateTimeOffset arrivalDate)
+        DateTimeOffset arrivalDate,
+        CancellationToken cancellationToken = default)
     {
         if (price < 0) 
             throw new ArgumentException("Price cannot be negative");
@@ -51,7 +52,8 @@ public class FlightService(TravelBookingDbContext dbContext)
         string? origin,
         string? destination,
         DateTimeOffset? departureDate,
-        DateTimeOffset? arrivalDate)
+        DateTimeOffset? arrivalDate,
+        CancellationToken cancellationToken = default)
     {
         var query = _dbContext.Flights.AsQueryable();
 
@@ -70,7 +72,7 @@ public class FlightService(TravelBookingDbContext dbContext)
         return await query.ToListAsync();
     }
 
-    public async Task UpdateAvailableSeatsAsync(Guid flightId, int newCapacity)
+    public async Task UpdateAvailableSeatsAsync(Guid flightId, int newCapacity, CancellationToken cancellationToken = default)
     {
         var flight = await _dbContext.Flights.FindAsync(flightId);
         if (flight is null) 
