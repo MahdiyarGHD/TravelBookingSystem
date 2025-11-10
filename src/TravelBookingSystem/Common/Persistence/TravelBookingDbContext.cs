@@ -1,5 +1,6 @@
 
 using Microsoft.EntityFrameworkCore;
+using TravelBookingSystem.Features.Flight.Common;
 
 namespace TravelBookingSystem.Common.Persistence;
 
@@ -9,6 +10,8 @@ public class TravelBookingDbContext : DbContext
     {
 
     }
+    
+    public DbSet<Flight> Flights => Set<Flight>();
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
