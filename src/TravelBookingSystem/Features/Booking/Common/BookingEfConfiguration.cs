@@ -12,6 +12,9 @@ public class BookingEfConfiguration : IEntityTypeConfiguration<Booking>
 
         builder.HasKey(x => x.Id);
 
+        builder.HasIndex(x => x.PassengerId);
+        builder.HasIndex(x => x.FlightId);
+        
         builder.Property(x => x.Id)
             .ValueGeneratedNever();
         
