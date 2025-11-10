@@ -1,6 +1,6 @@
 using FluentValidation;
 
-namespace TravelBookingSystem.Features.Flight.CreateFlight;
+namespace TravelBookingSystem.Features.Flight.Create;
 
 public class CreateFlightRequestValidator : AbstractValidator<CreateFlightRequest>
 {

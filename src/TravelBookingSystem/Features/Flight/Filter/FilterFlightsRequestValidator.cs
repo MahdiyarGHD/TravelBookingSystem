@@ -1,7 +1,7 @@
 using FluentValidation;
-using TravelBookingSystem.Features.Flight.FilterFlights;
+using TravelBookingSystem.Features.Flight.Filter;
 
-namespace TravelBookingSystem.Features.Flight.FilterFlights;
+namespace TravelBookingSystem.Features.Flight.Filter;
 
 public class FilterFlightsRequestValidator : AbstractValidator<FilterFlightsRequest>
 {

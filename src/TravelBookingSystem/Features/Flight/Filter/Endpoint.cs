@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using TravelBookingSystem.Common.Filters;
 using TravelBookingSystem.Features.Flight.Common;
 
-namespace TravelBookingSystem.Features.Flight.FilterFlights;
+namespace TravelBookingSystem.Features.Flight.Filter;
 
 public class Endpoint : ICarterModule
 {
