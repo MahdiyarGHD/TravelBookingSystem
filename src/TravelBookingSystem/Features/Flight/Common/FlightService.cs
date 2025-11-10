@@ -27,7 +27,7 @@ public class FlightService(TravelBookingDbContext dbContext)
             throw new ArgumentException("Departure must be before arrival");
         
         var exists = await _dbContext.Flights
-            .AnyAsync(f => f.FlightNumber == flightNumber);
+            .AnyAsync(f => f.FlightNumber == flightNumber, cancellationToken: cancellationToken);
 
         if (exists)
             throw new InvalidOperationException("Flight number already exists");
@@ -43,7 +43,7 @@ public class FlightService(TravelBookingDbContext dbContext)
         );
 
         _dbContext.Flights.Add(flight);
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(cancellationToken);
 
         return flight.Id;
     }
@@ -69,12 +69,12 @@ public class FlightService(TravelBookingDbContext dbContext)
         if (arrivalDate.HasValue)
             query = query.Where(f => f.ArrivalTime.Date == arrivalDate.Value.Date);
 
-        return await query.ToListAsync();
+        return await query.ToListAsync(cancellationToken: cancellationToken);
     }
 
     public async Task UpdateAvailableSeatsAsync(Guid flightId, int newCapacity, CancellationToken cancellationToken = default)
     {
-        var flight = await _dbContext.Flights.FindAsync(flightId);
+        var flight = await _dbContext.Flights.FindAsync(flightId, cancellationToken);
         if (flight is null) 
             throw new InvalidOperationException("Flight not found");
 
@@ -84,6 +84,6 @@ public class FlightService(TravelBookingDbContext dbContext)
         // we will check bookings here to not exceed the new capacity after implementing it
 
         flight.AvailableSeats = newCapacity;
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(cancellationToken);
     }
 }
