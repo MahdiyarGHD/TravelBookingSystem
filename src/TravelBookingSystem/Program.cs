@@ -8,6 +8,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.ConfigureDbContexts(builder.Configuration);
+builder.Services.ConfigureRedis(builder.Configuration);
 builder.Services.ConfigureValidator();
 builder.Services.AddCarter();
 builder.Services.AddServiceDiscovery();

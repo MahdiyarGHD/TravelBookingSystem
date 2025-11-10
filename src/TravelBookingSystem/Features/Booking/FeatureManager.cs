@@ -1,4 +1,7 @@
+using Medallion.Threading;
 using ServiceCollector.Abstractions;
+using TravelBookingSystem.Common.Providers;
+using TravelBookingSystem.Features.Booking.Common;
 using TravelBookingSystem.Features.Flight.Common;
 
 namespace TravelBookingSystem.Features.Booking;
@@ -12,7 +15,8 @@ public abstract class FeatureManager
     {
         public void AddServices(IServiceCollection serviceCollection)
         {
-            // serviceCollection.AddScoped<BookingService>();
+            serviceCollection.AddSingleton<IDistributedLockProvider, RedisDistributedLockProvider>();
+            serviceCollection.AddScoped<BookingService>();
         }
     }
 }

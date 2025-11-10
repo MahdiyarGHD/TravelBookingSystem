@@ -1,6 +1,7 @@
 using System.Reflection;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
+using StackExchange.Redis;
 using TravelBookingSystem.Common.Persistence;
 
 namespace TravelBookingSystem.Common.Extensions;
@@ -14,6 +15,15 @@ public static class ServiceCollectionExtensions
             options.UseNpgsql(configuration.GetConnectionString(TravelBookingDbContextSchema.DefaultConnectionStringName));
         });
 
+        return services;
+    }
+    
+    public static IServiceCollection ConfigureRedis(this IServiceCollection services, IConfiguration configuration)
+    {
+        var redisConnectionString = configuration.GetConnectionString("Redis")
+                                    ?? throw new InvalidOperationException("Redis connection string 'Redis' not found.");
+        
+        services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(redisConnectionString));
         return services;
     }
 
