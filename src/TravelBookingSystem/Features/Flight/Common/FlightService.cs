@@ -92,10 +92,10 @@ public class FlightService(
         var flight = await _dbContext.Flights.FindAsync(flightId, cancellationToken);
         if (flight is null)
             return (FailedReasonType.NotFound, "Flight not found");
-
+        
         var maxSeat = await _readOnlyDbContext.Bookings
             .Where(b => b.FlightId == flightId)
-            .MaxAsync(b => b.SeatNumber, cancellationToken);
+            .MaxAsync(b => (int?)b.SeatNumber, cancellationToken);
 
         if (maxSeat > newCapacity)
             return (FailedReasonType.Incorrect,"Cannot reduce capacity below existing seat assignments.");
