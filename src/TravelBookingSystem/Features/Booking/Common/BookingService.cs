@@ -1,3 +1,4 @@
+using EasyMicroservices.ServiceContracts;
 using Medallion.Threading;
 using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
@@ -14,26 +15,32 @@ public class BookingService(
     private readonly TravelBookingDbContextReadOnly _readonlyDbContext = readonlyDbContext;
     private readonly IDistributedLockProvider _distributedLockProvider = distributedLockProvider;
 
-    public async Task<Guid> BookSeatAsync(
+    public async Task<MessageContract<Guid>> BookSeatAsync(
         Guid passengerId, 
         Guid flightId, 
         CancellationToken cancellationToken = default)
     {
-        await ValidateBookingRequestAsync(passengerId, flightId, cancellationToken);
-
+        var validateRequestResult = await ValidateBookingRequestAsync(passengerId, flightId, cancellationToken);
+        if(!validateRequestResult)
+            return validateRequestResult.ToContract<Guid>();
+        
         await using var lockHandle = await AcquireFlightLockAsync(flightId, cancellationToken);
 
-        await EnsurePassengerHasNotBookedFlightAsync(passengerId, flightId, cancellationToken);
-
+        var ensurePassengerHasNotBookedResult = await EnsurePassengerHasNotBookedFlightAsync(passengerId, flightId, cancellationToken);
+        if(!ensurePassengerHasNotBookedResult)
+            return ensurePassengerHasNotBookedResult.ToContract<Guid>();
+        
         var flight = await _readonlyDbContext.Flights
             .FirstOrDefaultAsync(f => f.Id == flightId, cancellationToken);
         
-        var availableSeatNumber = await GetNextAvailableSeatAsync(flight!, cancellationToken);
-
+        var availableSeatNumberResult = await GetNextAvailableSeatAsync(flight!, cancellationToken);
+        if(!availableSeatNumberResult) 
+            return availableSeatNumberResult.ToContract<Guid>();
+        
         var booking = Booking.Create(
             passengerId,
             flightId,
-            availableSeatNumber,
+            availableSeatNumberResult.Result,
             DateTimeOffset.UtcNow);
 
         await PersistBookingAsync(booking, cancellationToken);
@@ -41,7 +48,7 @@ public class BookingService(
         return booking.Id;
     }
 
-    private async Task ValidateBookingRequestAsync(
+    private async Task<MessageContract> ValidateBookingRequestAsync(
         Guid passengerId, 
         Guid flightId, 
         CancellationToken cancellationToken)
@@ -50,13 +57,15 @@ public class BookingService(
             .AnyAsync(f => f.Id == flightId, cancellationToken);
 
         if (!flightExists)
-            throw new FlightNotFoundException(flightId);
+            return (FailedReasonType.Incorrect, $"Flight with ID '{flightId}' was not found.");
 
         var passengerExists = await _readonlyDbContext.Passengers
             .AnyAsync(p => p.Id == passengerId, cancellationToken);
 
         if (!passengerExists)
-            throw new PassengerNotFoundException(passengerId);
+            return (FailedReasonType.Incorrect, $"Passenger with ID '{passengerId}' was not found.");
+
+        return true;
     }
 
     private async Task<IDistributedSynchronizationHandle> AcquireFlightLockAsync(
@@ -75,7 +84,7 @@ public class BookingService(
         return handle;
     }
 
-    private async Task EnsurePassengerHasNotBookedFlightAsync(
+    private async Task<MessageContract> EnsurePassengerHasNotBookedFlightAsync(
         Guid passengerId, 
         Guid flightId, 
         CancellationToken cancellationToken)
@@ -86,10 +95,12 @@ public class BookingService(
                 cancellationToken);
 
         if (hasAlreadyBooked)
-            throw new DuplicateBookingException(passengerId, flightId);
+            return (FailedReasonType.Duplicate, $"Passenger '{passengerId}' has already booked flight '{flightId}'.");
+
+        return true;
     }
 
-    private async Task<int> GetNextAvailableSeatAsync(
+    private async Task<MessageContract<int>> GetNextAvailableSeatAsync(
         Flight.Common.Flight flight, 
         CancellationToken cancellationToken)
     {
@@ -99,13 +110,13 @@ public class BookingService(
             .ToHashSetAsync(cancellationToken);
 
         if (bookedSeats.Count >= flight.AvailableSeats)
-            throw new NoSeatsAvailableException(flight.Id);
+            return (FailedReasonType.Incorrect, $"Flight '{flight.Id}' doesn't have any available seats.");
 
         var nextSeat = Enumerable.Range(1, flight.AvailableSeats)
             .FirstOrDefault(n => !bookedSeats.Contains(n));
 
         if (nextSeat == 0)
-            throw new NoSeatsAvailableException(flight.Id);
+            return (FailedReasonType.Incorrect, $"Flight '{flight.Id}' doesn't have any available seats.");
 
         return nextSeat;
     }

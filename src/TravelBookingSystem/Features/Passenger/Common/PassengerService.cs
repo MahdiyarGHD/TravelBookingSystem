@@ -1,3 +1,4 @@
+using EasyMicroservices.ServiceContracts;
 using Microsoft.EntityFrameworkCore;
 using TravelBookingSystem.Common.Persistence;
 
@@ -10,7 +11,7 @@ public class PassengerService(
 {
     private readonly TravelBookingDbContext _dbContext = dbContext;
     private readonly TravelBookingDbContextReadOnly _readOnlyDbContext = readOnlyDbContext;
-    public async Task<Guid> CreateAsync(
+    public async Task<MessageContract<Guid>> CreateAsync(
         string fullName,
         string email,
         string passportNumber,
@@ -21,7 +22,7 @@ public class PassengerService(
             .AnyAsync(p => phoneNumber != null && p.PhoneNumber == phoneNumber, cancellationToken: cancellationToken);
 
         if (exists)
-            throw new InvalidOperationException("Passenger with same phone number already exists.");
+            return (FailedReasonType.Incorrect, "Passenger with same phone number already exists.");
         
         var passenger = Passenger.Create(
             fullName,
@@ -38,13 +39,13 @@ public class PassengerService(
         }
         catch (DbUpdateException ex) when (ex.InnerException?.Message.Contains("duplicate") is true)
         {
-            throw new InvalidOperationException("Duplicate passenger detected.", ex);
+            return (FailedReasonType.Incorrect, "Duplicate passenger detected.");
         }
         
         return passenger.Id;
     }
 
-    public async Task<IReadOnlyList<Passenger>> GetAllAsync(CancellationToken cancellationToken = default) =>
+    public async Task<List<Passenger>> GetAllAsync(CancellationToken cancellationToken = default) =>
         await _readOnlyDbContext.Passengers
             .ToListAsync(cancellationToken: cancellationToken);
 }

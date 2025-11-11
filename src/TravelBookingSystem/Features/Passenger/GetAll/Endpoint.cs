@@ -1,6 +1,8 @@
 using Carter;
+using EasyMicroservices.ServiceContracts;
 using Microsoft.AspNetCore.Mvc;
 using TravelBookingSystem.Common.Filters;
+using TravelBookingSystem.Common.Persistence;
 using TravelBookingSystem.Features.Passenger.Common;
 using TravelBookingSystem.Features.Passenger.Create;
 
@@ -14,8 +16,12 @@ public class Endpoint : ICarterModule
         app
             .MapGroup(FeatureManager.Prefix)
             .WithTags(FeatureManager.EndpointTagName)
-            .MapGet("/",
-                async (PassengerService service, CancellationToken cancellationToken) =>
-                    Results.Ok(await service.GetAllAsync(cancellationToken)));
+            .MapGet("/", async (PassengerService service, CancellationToken cancellationToken) =>
+                {
+                    var result = await service.GetAllAsync(cancellationToken);
+                    return Results.Ok((ListMessageContract<Common.Passenger>)result);
+                }
+            )
+            .Produces<ListMessageContract<Common.Passenger>>();
     }
 }

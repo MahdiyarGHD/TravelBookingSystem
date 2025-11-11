@@ -1,4 +1,5 @@
 using Carter;
+using EasyMicroservices.ServiceContracts;
 using Microsoft.AspNetCore.Mvc;
 using TravelBookingSystem.Common.Filters;
 using TravelBookingSystem.Features.Booking.Common;
@@ -20,13 +21,18 @@ public class Endpoint : ICarterModule
                     var flightId = Guid.Parse(request.FlightId);
                     var passengerId = Guid.Parse(request.PassengerId);
                     
-                    var bookingId = await service.BookSeatAsync(
+                    var bookingResult = await service.BookSeatAsync(
                         flightId: flightId,
                         passengerId: passengerId,
                         cancellationToken: cancellationToken
                     );
 
-                    return new BookSeatResponse(bookingId.ToString());
-                }).AddEndpointFilter<EndpointValidatorFilter<BookSeatRequest>>();;
+                    if (!bookingResult)
+                        return Results.BadRequest(bookingResult.ToContract<string>());
+                    
+                    return Results.Ok(bookingResult);
+                })
+            .AddEndpointFilter<EndpointValidatorFilter<BookSeatRequest>>()
+            .Produces<MessageContract<string>>();
     }
 }

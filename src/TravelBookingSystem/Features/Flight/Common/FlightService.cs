@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using EasyMicroservices.ServiceContracts;
 using Medallion.Threading;
 using Microsoft.EntityFrameworkCore;
 using TravelBookingSystem.Common.Persistence;
@@ -15,7 +16,7 @@ public class FlightService(
     private readonly TravelBookingDbContextReadOnly _readOnlyDbContext = readonlyDbContext;
     private readonly IDistributedLockProvider _distributedLockProvider = distributedLockProvider;
 
-    public async Task<Guid> CreateAsync(
+    public async Task<MessageContract<Guid>> CreateAsync(
         int availableSeats, 
         string flightNumber, 
         decimal price, 
@@ -26,19 +27,19 @@ public class FlightService(
         CancellationToken cancellationToken = default)
     {
         if (price < 0) 
-            throw new ArgumentException("Price cannot be negative");
+            return (FailedReasonType.Incorrect, "Price cannot be negative");
         
         if (availableSeats < 0)
-            throw new ArgumentException("available seats cannot be negative");
+            return (FailedReasonType.Incorrect, "available seats cannot be negative");
 
         if (departureDate >= arrivalDate) 
-            throw new ArgumentException("Departure must be before arrival");
+            return (FailedReasonType.Incorrect, "Departure must be before arrival");
         
         var exists = await _readOnlyDbContext.Flights
             .AnyAsync(f => f.FlightNumber == flightNumber, cancellationToken: cancellationToken);
 
         if (exists)
-            throw new InvalidOperationException("Flight number already exists");
+            return (FailedReasonType.Duplicate, "Flight number already exists");
         
         var flight = Flight.Create(
             flightNumber,
@@ -80,7 +81,7 @@ public class FlightService(
         return await query.ToListAsync(cancellationToken: cancellationToken);
     }
 
-    public async Task UpdateAvailableSeatsAsync(Guid flightId, int newCapacity, CancellationToken cancellationToken = default)
+    public async Task<MessageContract> UpdateAvailableSeatsAsync(Guid flightId, int newCapacity, CancellationToken cancellationToken = default)
     {
         var @lock = _distributedLockProvider.CreateLock($"flight:{flightId}");
         await using var handle = await @lock.TryAcquireAsync(cancellationToken: cancellationToken);
@@ -90,20 +91,22 @@ public class FlightService(
 
         var flight = await _dbContext.Flights.FindAsync(flightId, cancellationToken);
         if (flight is null)
-            throw new InvalidOperationException("Flight not found");
+            return (FailedReasonType.NotFound, "Flight not found");
 
         var maxSeat = await _readOnlyDbContext.Bookings
             .Where(b => b.FlightId == flightId)
             .MaxAsync(b => b.SeatNumber, cancellationToken);
 
         if (maxSeat > newCapacity)
-            throw new InvalidOperationException("Cannot reduce capacity below existing seat assignments.");
+            return (FailedReasonType.Incorrect,"Cannot reduce capacity below existing seat assignments.");
 
         flight.UpdateAvailableSeats(newCapacity);
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return true;
     }
 
-    public async Task<IReadOnlyList<BookingDto>> GetBookingsAsync(
+    public async Task<ListMessageContract<BookingDto>> GetBookingsAsync(
         Guid flightId,
         CancellationToken cancellationToken = default)
     {
@@ -111,7 +114,7 @@ public class FlightService(
             .AnyAsync(f => f.Id == flightId, cancellationToken);
 
         if (!flightExists)
-            throw new FlightNotFoundException(flightId);
+            return (FailedReasonType.NotFound, $"Flight with flight id '{flightId.ToString()}' not found");
 
         var bookings = await _readOnlyDbContext.Bookings
             .Where(b => b.FlightId == flightId)

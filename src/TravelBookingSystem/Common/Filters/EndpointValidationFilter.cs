@@ -1,6 +1,9 @@
 using System.Net;
+using Azure.Messaging;
+using EasyMicroservices.ServiceContracts;
 using FluentValidation;
 using FluentValidation.Results;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace TravelBookingSystem.Common.Filters;
 
@@ -17,8 +20,17 @@ internal class EndpointValidatorFilter<T>(IValidator<T> validator) : IEndpointFi
             var validationResult = await Validator.ValidateAsync(inputData);
             if (!validationResult.IsValid)
             {
-                return Results.ValidationProblem(validationResult.ToDictionary(),
-                    statusCode: (int)HttpStatusCode.UnprocessableEntity);
+                var errors = validationResult.ToDictionary();
+                MessageContract messageContract = FailedReasonType.ValidationsError;
+                messageContract.Error = new ErrorContract
+                {
+                    Validations = errors.SelectMany(err => err.Value).Select(err => new ValidationContract
+                    {
+                        Message = err
+                    }).ToList()
+                };
+
+                return Results.Json(messageContract, statusCode: (int)HttpStatusCode.UnprocessableEntity);
             }
         }
 

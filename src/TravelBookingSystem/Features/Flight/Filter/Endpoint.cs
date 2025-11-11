@@ -1,4 +1,5 @@
 using Carter;
+using EasyMicroservices.ServiceContracts;
 using Microsoft.AspNetCore.Mvc;
 using TravelBookingSystem.Common.Filters;
 using TravelBookingSystem.Features.Flight.Common;
@@ -23,7 +24,9 @@ public class Endpoint : ICarterModule
                             cancellationToken: cancellationToken
                     );
                     
-                    return Results.Ok(flights);
-                }).AddEndpointFilter<EndpointValidatorFilter<FilterFlightsRequest>>();
+                    return Results.Ok((ListMessageContract<Common.Flight>)flights);
+                })
+            .AddEndpointFilter<EndpointValidatorFilter<FilterFlightsRequest>>()
+            .Produces<ListMessageContract<Common.Flight>>();
     }
 }

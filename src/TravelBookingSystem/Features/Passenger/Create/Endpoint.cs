@@ -1,4 +1,5 @@
 using Carter;
+using EasyMicroservices.ServiceContracts;
 using Microsoft.AspNetCore.Mvc;
 using TravelBookingSystem.Common.Filters;
 using TravelBookingSystem.Features.Passenger.Common;
@@ -15,7 +16,7 @@ public class Endpoint : ICarterModule
             .MapPost("/",
                 async ([FromBody] CreatePassengerRequest request, PassengerService service, CancellationToken cancellationToken) =>
                 {
-                    var passengerId = await service.CreateAsync(
+                    var passengerResult = await service.CreateAsync(
                         email: request.Email,
                         phoneNumber: request.PhoneNumber,
                         passportNumber: request.PassportNumber,
@@ -23,7 +24,12 @@ public class Endpoint : ICarterModule
                         cancellationToken: cancellationToken
                         );
                     
-                    return new CreatePassengerResponse(passengerId.ToString());
-                }).AddEndpointFilter<EndpointValidatorFilter<CreatePassengerRequest>>();
+                    if(!passengerResult)
+                        return Results.BadRequest(passengerResult.ToContract<string>());
+                    
+                    return Results.Ok(passengerResult);
+                })
+            .AddEndpointFilter<EndpointValidatorFilter<CreatePassengerRequest>>()
+            .Produces<MessageContract<string>>();
     }
 }
