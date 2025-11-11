@@ -58,7 +58,7 @@ public class BookingService(
         Guid flightId, 
         CancellationToken cancellationToken)
     {
-        var @lock = _distributedLockProvider.CreateLock($"flight-booking:{flightId}");
+        var @lock = _distributedLockProvider.CreateLock($"flight:{flightId}");
         
         var handle = await @lock.TryAcquireAsync(
             timeout: TimeSpan.FromSeconds(30), 

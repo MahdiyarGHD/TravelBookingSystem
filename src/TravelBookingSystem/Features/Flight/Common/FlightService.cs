@@ -78,7 +78,7 @@ public class FlightService(TravelBookingDbContext dbContext, IDistributedLockPro
 
     public async Task UpdateAvailableSeatsAsync(Guid flightId, int newCapacity, CancellationToken cancellationToken = default)
     {
-        var @lock = _distributedLockProvider.CreateLock($"flight-capacity:{flightId}");
+        var @lock = _distributedLockProvider.CreateLock($"flight:{flightId}");
         await using var handle = await @lock.TryAcquireAsync(cancellationToken: cancellationToken);
 
         if (handle is null)
