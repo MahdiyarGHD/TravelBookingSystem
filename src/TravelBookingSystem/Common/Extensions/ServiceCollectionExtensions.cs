@@ -1,13 +1,21 @@
 using System.Reflection;
 using FluentValidation;
+using Medallion.Threading;
 using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
 using TravelBookingSystem.Common.Persistence;
+using TravelBookingSystem.Common.Providers;
 
 namespace TravelBookingSystem.Common.Extensions;
 
 public static class ServiceCollectionExtensions
 {
+    public static IServiceCollection ConfigureDistributedLock(this IServiceCollection services)
+    {
+        services.AddSingleton<IDistributedLockProvider, RedisDistributedLockProvider>();
+        return services;
+    }
+    
     public static IServiceCollection ConfigureDbContexts(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddDbContext<TravelBookingDbContext>(options =>

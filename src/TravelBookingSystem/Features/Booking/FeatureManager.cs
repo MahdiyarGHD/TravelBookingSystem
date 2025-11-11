@@ -15,7 +15,6 @@ public abstract class FeatureManager
     {
         public void AddServices(IServiceCollection serviceCollection)
         {
-            serviceCollection.AddSingleton<IDistributedLockProvider, RedisDistributedLockProvider>();
             serviceCollection.AddScoped<BookingService>();
         }
     }

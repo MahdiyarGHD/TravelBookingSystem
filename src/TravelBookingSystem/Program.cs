@@ -9,6 +9,7 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.ConfigureDbContexts(builder.Configuration);
 builder.Services.ConfigureRedis(builder.Configuration);
+builder.Services.ConfigureDistributedLock();
 builder.Services.ConfigureValidator();
 builder.Services.AddCarter();
 builder.Services.AddServiceDiscovery();
