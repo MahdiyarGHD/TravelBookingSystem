@@ -92,9 +92,12 @@ public class FlightService(
         if (flight is null)
             throw new InvalidOperationException("Flight not found");
 
-        var bookedCount = await _readOnlyDbContext.Bookings.CountAsync(b => b.FlightId == flightId, cancellationToken);
-        if (bookedCount > newCapacity)
-            throw new ArgumentException("Capacity must be more than the number of booked flights");
+        var maxSeat = await _readOnlyDbContext.Bookings
+            .Where(b => b.FlightId == flightId)
+            .MaxAsync(b => b.SeatNumber, cancellationToken);
+
+        if (maxSeat > newCapacity)
+            throw new InvalidOperationException("Cannot reduce capacity below existing seat assignments.");
 
         flight.UpdateAvailableSeats(newCapacity);
         await _dbContext.SaveChangesAsync(cancellationToken);
