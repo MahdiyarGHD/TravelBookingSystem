@@ -15,6 +15,12 @@ public static class ServiceCollectionExtensions
             options.UseNpgsql(configuration.GetConnectionString(TravelBookingDbContextSchema.DefaultConnectionStringName));
         });
 
+        services.AddDbContext<TravelBookingDbContextReadOnly>(options =>
+        {
+            options.UseNpgsql(configuration.GetConnectionString(TravelBookingDbContextSchema.DefaultConnectionStringName))
+                .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
+        });
+
         return services;
     }
     
