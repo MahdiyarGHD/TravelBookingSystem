@@ -3,10 +3,13 @@ using TravelBookingSystem.Common.Persistence;
 
 namespace TravelBookingSystem.Features.Passenger.Common;
 
-public class PassengerService(TravelBookingDbContext dbContext)
+public class PassengerService(
+    TravelBookingDbContext dbContext,
+    TravelBookingDbContextReadOnly readOnlyDbContext
+    )
 {
     private readonly TravelBookingDbContext _dbContext = dbContext;
-    
+    private readonly TravelBookingDbContextReadOnly _readOnlyDbContext = readOnlyDbContext;
     public async Task<Guid> CreateAsync(
         string fullName,
         string email,
@@ -14,7 +17,7 @@ public class PassengerService(TravelBookingDbContext dbContext)
         string? phoneNumber,
         CancellationToken cancellationToken = default)
     {
-        var exists = await _dbContext.Passengers
+        var exists = await _readOnlyDbContext.Passengers
             .AnyAsync(p => phoneNumber != null && p.PhoneNumber == phoneNumber, cancellationToken: cancellationToken);
 
         if (exists)
@@ -42,6 +45,6 @@ public class PassengerService(TravelBookingDbContext dbContext)
     }
 
     public async Task<IReadOnlyList<Passenger>> GetAllAsync(CancellationToken cancellationToken = default) =>
-        await _dbContext.Passengers.AsNoTracking()
+        await _readOnlyDbContext.Passengers
             .ToListAsync(cancellationToken: cancellationToken);
 }

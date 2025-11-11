@@ -7,9 +7,11 @@ namespace TravelBookingSystem.Features.Booking.Common;
 
 public class BookingService(
     TravelBookingDbContext dbContext,
+    TravelBookingDbContextReadOnly readonlyDbContext,
     IDistributedLockProvider distributedLockProvider)
 {
     private readonly TravelBookingDbContext _dbContext = dbContext;
+    private readonly TravelBookingDbContextReadOnly _readonlyDbContext = readonlyDbContext;
     private readonly IDistributedLockProvider _distributedLockProvider = distributedLockProvider;
 
     public async Task<Guid> BookSeatAsync(
@@ -23,13 +25,16 @@ public class BookingService(
 
         await EnsurePassengerHasNotBookedFlightAsync(passengerId, flightId, cancellationToken);
 
-        var flight = await _dbContext.Flights
-            .AsNoTracking()
+        var flight = await _readonlyDbContext.Flights
             .FirstOrDefaultAsync(f => f.Id == flightId, cancellationToken);
         
         var availableSeatNumber = await GetNextAvailableSeatAsync(flight!, cancellationToken);
 
-        var booking = CreateBooking(passengerId, flightId, availableSeatNumber);
+        var booking = Booking.Create(
+            passengerId,
+            flightId,
+            availableSeatNumber,
+            DateTimeOffset.UtcNow);
 
         await PersistBookingAsync(booking, cancellationToken);
 
@@ -41,13 +46,13 @@ public class BookingService(
         Guid flightId, 
         CancellationToken cancellationToken)
     {
-        var flightExists = await _dbContext.Flights
+        var flightExists = await _readonlyDbContext.Flights
             .AnyAsync(f => f.Id == flightId, cancellationToken);
 
         if (!flightExists)
             throw new FlightNotFoundException(flightId);
 
-        var passengerExists = await _dbContext.Passengers
+        var passengerExists = await _readonlyDbContext.Passengers
             .AnyAsync(p => p.Id == passengerId, cancellationToken);
 
         if (!passengerExists)
@@ -75,7 +80,7 @@ public class BookingService(
         Guid flightId, 
         CancellationToken cancellationToken)
     {
-        var hasAlreadyBooked = await _dbContext.Bookings
+        var hasAlreadyBooked = await _readonlyDbContext.Bookings
             .AnyAsync(
                 b => b.FlightId == flightId && b.PassengerId == passengerId, 
                 cancellationToken);
@@ -88,8 +93,7 @@ public class BookingService(
         Flight.Common.Flight flight, 
         CancellationToken cancellationToken)
     {
-        var bookedSeats = await _dbContext.Bookings
-            .AsNoTracking()
+        var bookedSeats = await _readonlyDbContext.Bookings
             .Where(b => b.FlightId == flight.Id)
             .Select(b => b.SeatNumber)
             .ToHashSetAsync(cancellationToken);
@@ -105,16 +109,6 @@ public class BookingService(
 
         return nextSeat;
     }
-
-    private static Booking CreateBooking(Guid passengerId, Guid flightId, int seatNumber)
-    {
-        return Booking.Create(
-            passengerId,
-            flightId,
-            seatNumber,
-            DateTimeOffset.UtcNow);
-    }
-
     private async Task PersistBookingAsync(Booking booking, CancellationToken cancellationToken)
     {
         _dbContext.Bookings.Add(booking);

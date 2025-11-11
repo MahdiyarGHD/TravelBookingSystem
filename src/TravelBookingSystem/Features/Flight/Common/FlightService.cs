@@ -6,9 +6,13 @@ using TravelBookingSystem.Features.Booking.Common;
 
 namespace TravelBookingSystem.Features.Flight.Common;
 
-public class FlightService(TravelBookingDbContext dbContext, IDistributedLockProvider distributedLockProvider)
+public class FlightService(    
+    TravelBookingDbContext dbContext,
+    TravelBookingDbContextReadOnly readonlyDbContext,
+    IDistributedLockProvider distributedLockProvider)
 {
     private readonly TravelBookingDbContext _dbContext = dbContext;
+    private readonly TravelBookingDbContextReadOnly _readOnlyDbContext = readonlyDbContext;
     private readonly IDistributedLockProvider _distributedLockProvider = distributedLockProvider;
 
     public async Task<Guid> CreateAsync(
@@ -30,7 +34,7 @@ public class FlightService(TravelBookingDbContext dbContext, IDistributedLockPro
         if (departureDate >= arrivalDate) 
             throw new ArgumentException("Departure must be before arrival");
         
-        var exists = await _dbContext.Flights
+        var exists = await _readOnlyDbContext.Flights
             .AnyAsync(f => f.FlightNumber == flightNumber, cancellationToken: cancellationToken);
 
         if (exists)
@@ -59,7 +63,7 @@ public class FlightService(TravelBookingDbContext dbContext, IDistributedLockPro
         DateTimeOffset? arrivalDate,
         CancellationToken cancellationToken = default)
     {
-        var query = _dbContext.Flights.AsQueryable();
+        var query = _readOnlyDbContext.Flights;
 
         if (!string.IsNullOrWhiteSpace(origin))
             query = query.Where(f => f.Origin == origin);
@@ -88,7 +92,7 @@ public class FlightService(TravelBookingDbContext dbContext, IDistributedLockPro
         if (flight is null)
             throw new InvalidOperationException("Flight not found");
 
-        var bookedCount = await _dbContext.Bookings.CountAsync(b => b.FlightId == flightId, cancellationToken);
+        var bookedCount = await _readOnlyDbContext.Bookings.CountAsync(b => b.FlightId == flightId, cancellationToken);
         if (bookedCount > newCapacity)
             throw new ArgumentException("Capacity must be more than the number of booked flights");
 
@@ -100,15 +104,13 @@ public class FlightService(TravelBookingDbContext dbContext, IDistributedLockPro
         Guid flightId,
         CancellationToken cancellationToken = default)
     {
-        var flightExists = await _dbContext.Flights
-            .AsNoTracking()
+        var flightExists = await _readOnlyDbContext.Flights
             .AnyAsync(f => f.Id == flightId, cancellationToken);
 
         if (!flightExists)
             throw new FlightNotFoundException(flightId);
 
-        var bookings = await _dbContext.Bookings
-            .AsNoTracking()
+        var bookings = await _readOnlyDbContext.Bookings
             .Where(b => b.FlightId == flightId)
             .Select(b => new BookingDto(
                 b.Id,
