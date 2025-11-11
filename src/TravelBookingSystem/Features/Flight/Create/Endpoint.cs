@@ -31,7 +31,7 @@ public class Endpoint : ICarterModule
                         if (!flightResult)
                             return Results.BadRequest(flightResult.ToContract<CreateFlightResponse>());
 
-                        return Results.Ok(flightResult);
+                        return Results.Ok((MessageContract<string>)flightResult.Result.ToString());
                     }
             )
             .AddEndpointFilter<EndpointValidatorFilter<CreateFlightRequest>>()

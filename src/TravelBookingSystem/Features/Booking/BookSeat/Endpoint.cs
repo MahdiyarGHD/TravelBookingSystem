@@ -30,7 +30,7 @@ public class Endpoint : ICarterModule
                     if (!bookingResult)
                         return Results.BadRequest(bookingResult.ToContract<string>());
                     
-                    return Results.Ok(bookingResult);
+                    return Results.Ok((MessageContract<string>)bookingResult.Result.ToString());
                 })
             .AddEndpointFilter<EndpointValidatorFilter<BookSeatRequest>>()
             .Produces<MessageContract<string>>();

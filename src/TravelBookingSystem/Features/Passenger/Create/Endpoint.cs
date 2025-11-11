@@ -27,7 +27,7 @@ public class Endpoint : ICarterModule
                     if(!passengerResult)
                         return Results.BadRequest(passengerResult.ToContract<string>());
                     
-                    return Results.Ok(passengerResult);
+                    return Results.Ok((MessageContract<string>)passengerResult.Result.ToString());
                 })
             .AddEndpointFilter<EndpointValidatorFilter<CreatePassengerRequest>>()
             .Produces<MessageContract<string>>();
