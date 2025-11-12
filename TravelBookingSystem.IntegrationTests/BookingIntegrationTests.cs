@@ -12,16 +12,9 @@ using TravelBookingSystem.Features.Passenger.Common;
 
 namespace TravelBookingSystem.IntegrationTests;
 
-public class BookingIntegrationTests : IClassFixture<IntegrationTestFixture>
+public class BookingIntegrationTests(IntegrationTestFixture fixture) : IClassFixture<IntegrationTestFixture>
 {
-    private readonly IntegrationTestFixture _fixture;
-    private readonly HttpClient _client;
-
-    public BookingIntegrationTests(IntegrationTestFixture fixture)
-    {
-        _fixture = fixture;
-        _client = fixture.Client;
-    }
+    private readonly HttpClient _client = fixture.CreateClient();
 
     [Fact]
     public async Task BookSeat_WithRealInfrastructure_ShouldSucceed()
@@ -72,9 +65,8 @@ public class BookingIntegrationTests : IClassFixture<IntegrationTestFixture>
         bookingResult!.IsSuccess.Should().BeTrue();
 
         // Verify in database
-        using var scope = _fixture.CreateScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<TravelBookingDbContextReadOnly>();
-        var booking = await dbContext.Bookings
+        var readContext = fixture.GetDbContext<TravelBookingDbContextReadOnly>();
+        var booking = await readContext.Bookings
             .FirstOrDefaultAsync(b => b.PassengerId == passengerId && b.FlightId == flightId);
 
         booking.Should().NotBeNull();
@@ -85,9 +77,9 @@ public class BookingIntegrationTests : IClassFixture<IntegrationTestFixture>
     public async Task BookSeat_ConcurrentRequestsWithRealRedis_ShouldAllocateUniqueSeats()
     {
         // Arrange
-        using var scope = _fixture.CreateScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<TravelBookingDbContext>();
-        
+        var writeContext = fixture.GetDbContext<TravelBookingDbContext>();
+        var readContext = fixture.GetDbContext<TravelBookingDbContextReadOnly>();
+
         var passengers = Enumerable.Range(1, 5)
             .Select(i => Passenger.Create(
                 $"Passenger {i}",
@@ -105,9 +97,9 @@ public class BookingIntegrationTests : IClassFixture<IntegrationTestFixture>
             100,
             199.99m);
 
-        dbContext.Passengers.AddRange(passengers);
-        dbContext.Flights.Add(flight);
-        await dbContext.SaveChangesAsync();
+        writeContext.Passengers.AddRange(passengers);
+        writeContext.Flights.Add(flight);
+        await writeContext.SaveChangesAsync();
 
         // Act
         var bookingTasks = passengers.Select(p => Task.Run(async () =>
@@ -127,8 +119,6 @@ public class BookingIntegrationTests : IClassFixture<IntegrationTestFixture>
         });
 
         // Verify seat numbers are unique
-        using var verifyScope = _fixture.CreateScope();
-        var readContext = verifyScope.ServiceProvider.GetRequiredService<TravelBookingDbContextReadOnly>();
         var bookings = await readContext.Bookings
             .Where(b => b.FlightId == flight.Id)
             .ToListAsync();
@@ -143,8 +133,8 @@ public class BookingIntegrationTests : IClassFixture<IntegrationTestFixture>
     public async Task BookSeat_ConcurrentRequestsForLastSeat_OnlyOneSucceeds()
     {
         // Arrange
-        using var scope = _fixture.CreateScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<TravelBookingDbContext>();
+        var writeContext = fixture.GetDbContext<TravelBookingDbContext>();
+        var readContext = fixture.GetDbContext<TravelBookingDbContextReadOnly>();
         
         var passengers = Enumerable.Range(1, 3)
             .Select(i => Passenger.Create(
@@ -163,9 +153,9 @@ public class BookingIntegrationTests : IClassFixture<IntegrationTestFixture>
             1, // Only 1 seat
             399.99m);
 
-        dbContext.Passengers.AddRange(passengers);
-        dbContext.Flights.Add(flight);
-        await dbContext.SaveChangesAsync();
+        writeContext.Passengers.AddRange(passengers);
+        writeContext.Flights.Add(flight);
+        await writeContext.SaveChangesAsync();
 
         // Act 
         var bookingTasks = passengers.Select(p => Task.Run(async () =>
@@ -195,8 +185,6 @@ public class BookingIntegrationTests : IClassFixture<IntegrationTestFixture>
         successCount.Should().Be(1, "only one passenger should get the last seat");
 
         // Verify only 1 booking exists
-        using var verifyScope = _fixture.CreateScope();
-        var readContext = verifyScope.ServiceProvider.GetRequiredService<TravelBookingDbContextReadOnly>();
         var bookings = await readContext.Bookings
             .Where(b => b.FlightId == flight.Id)
             .ToListAsync();
@@ -209,8 +197,7 @@ public class BookingIntegrationTests : IClassFixture<IntegrationTestFixture>
     public async Task FlightFilter_WithRealDatabase_ShouldReturnCorrectResults()
     {
         // Arrange 
-        using var scope = _fixture.CreateScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<TravelBookingDbContext>();
+        var writeContext = fixture.GetDbContext<TravelBookingDbContext>();
         
         var flights = new[]
         {
@@ -222,8 +209,8 @@ public class BookingIntegrationTests : IClassFixture<IntegrationTestFixture>
                 DateTimeOffset.UtcNow.AddDays(2).AddHours(2), 80, 199.99m),
         };
 
-        dbContext.Flights.AddRange(flights);
-        await dbContext.SaveChangesAsync();
+        writeContext.Flights.AddRange(flights);
+        await writeContext.SaveChangesAsync();
 
         // Act
         var response = await _client!.GetAsync("/flights/filter?origin=MHD");

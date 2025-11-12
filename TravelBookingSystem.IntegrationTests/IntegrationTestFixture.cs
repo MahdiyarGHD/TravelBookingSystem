@@ -1,5 +1,4 @@
-using System.Net.Http.Json;
-using DotNet.Testcontainers.Builders;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,7 +9,7 @@ using TravelBookingSystem.Common.Persistence;
 
 namespace TravelBookingSystem.IntegrationTests;
 
-public sealed class IntegrationTestFixture : IAsyncLifetime, IDisposable
+public sealed class IntegrationTestFixture : WebApplicationFactory<Program>, IAsyncLifetime
 {
     private readonly PostgreSqlContainer _postgresContainer = new PostgreSqlBuilder()
         .WithImage("postgres:16-alpine")
@@ -19,32 +18,20 @@ public sealed class IntegrationTestFixture : IAsyncLifetime, IDisposable
         .WithPassword("testpass")
         .WithCleanUp(true)
         .Build();
-
     private readonly RedisContainer _redisContainer = new RedisBuilder()
         .WithImage("redis:7-alpine")
         .WithCleanUp(true)
         .Build();
 
-    private WebApplicationFactory<Program>? _factory;
-    private HttpClient? _client;
-
-    public HttpClient Client => _client ?? throw new InvalidOperationException("Fixture not initialized");
-
-    public IServiceProvider Services => _factory?.Services ?? throw new InvalidOperationException("Factory not initialized");
-
-    public IServiceScope CreateScope() => Services.CreateScope();
-
-    public async Task InitializeAsync()
+    public T GetDbContext<T>() where T : DbContext
     {
-        await Task.WhenAll(
-            _postgresContainer.StartAsync(),
-            _redisContainer.StartAsync()
-        );
+        var scope = Services.GetRequiredService<IServiceScopeFactory>().CreateScope();
+        return scope.ServiceProvider.GetRequiredService<T>();
+    }
 
-        _factory = new WebApplicationFactory<Program>()
-            .WithWebHostBuilder(builder =>
-            {
-                builder.ConfigureServices(services =>
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    {
+        builder.ConfigureServices(services =>
                 {
                     var descriptors = services.Where(d =>
                         d.ServiceType == typeof(DbContextOptions<TravelBookingDbContext>) ||
@@ -66,32 +53,21 @@ public sealed class IntegrationTestFixture : IAsyncLifetime, IDisposable
                     services.AddSingleton<IConnectionMultiplexer>(sp =>
                         ConnectionMultiplexer.Connect(_redisContainer.GetConnectionString()));
                 });
-            });
-
-        _client = _factory.CreateClient();
-
-        // Apply migrations
-        using var scope = CreateScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<TravelBookingDbContext>();
-        await dbContext.Database.MigrateAsync();
     }
 
-    public async Task DisposeAsync()
+    public async Task InitializeAsync()
     {
-        _client?.Dispose();
-        _factory?.Dispose();
+        await Task.WhenAll(
+            _postgresContainer.StartAsync(),
+            _redisContainer.StartAsync()
+        );
+    }
 
+    async Task IAsyncLifetime.DisposeAsync()
+    {
         await Task.WhenAll(
             _postgresContainer.StopAsync(),
             _redisContainer.StopAsync()
         );
-    }
-
-    public void Dispose()
-    {
-        _client?.Dispose();
-        _factory?.Dispose();
-        _postgresContainer.DisposeAsync().AsTask().Wait();
-        _redisContainer.DisposeAsync().AsTask().Wait();
     }
 }
