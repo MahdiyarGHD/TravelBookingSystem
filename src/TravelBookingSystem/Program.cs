@@ -22,6 +22,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseCustomExceptionHandler();
 app.UseHttpsRedirection();
 app.MapCarter();
 
