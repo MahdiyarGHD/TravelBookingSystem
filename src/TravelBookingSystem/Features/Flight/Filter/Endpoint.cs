@@ -26,6 +26,7 @@ public class Endpoint : ICarterModule
                     
                     return Results.Ok((ListMessageContract<Common.Flight>)flights);
                 })
+            .WithSummary("Filter flights by criteria")
             .AddEndpointFilter<EndpointValidatorFilter<FilterFlightsRequest>>()
             .Produces<ListMessageContract<Common.Flight>>();
     }

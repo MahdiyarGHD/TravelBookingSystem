@@ -24,7 +24,9 @@ public class Endpoint : ICarterModule
                         return Results.BadRequest(result.ToContract());
                     
                     return Results.Ok((MessageContract)true);
-                }).AddEndpointFilter<EndpointValidatorFilter<UpdateAvailableSeatsRequest>>()
+                })
+            .WithSummary("Update available seats (flight's capacity) for a flight")
+            .AddEndpointFilter<EndpointValidatorFilter<UpdateAvailableSeatsRequest>>()
             .Produces<MessageContract>();
     }
 }

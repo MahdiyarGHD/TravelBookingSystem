@@ -34,6 +34,7 @@ public class Endpoint : ICarterModule
                         return Results.Ok((MessageContract<string>)flightResult.Result.ToString());
                     }
             )
+            .WithSummary("Create a flight")
             .AddEndpointFilter<EndpointValidatorFilter<CreateFlightRequest>>()
             .Produces<MessageContract<string>>();
     }

@@ -22,6 +22,7 @@ public class Endpoint : ICarterModule
                     return Results.Ok((ListMessageContract<Common.Passenger>)result);
                 }
             )
+            .WithSummary("Get all passengers")
             .Produces<ListMessageContract<Common.Passenger>>();
     }
 }

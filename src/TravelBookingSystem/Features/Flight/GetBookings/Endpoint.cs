@@ -30,6 +30,7 @@ public class Endpoint : ICarterModule
                     
                     return Results.Ok(flightsResult);
                 })
+            .WithSummary("Get all bookings for a flight")
             .AddEndpointFilter<EndpointValidatorFilter<GetBookingsRequest>>()
             .Produces<ListMessageContract<BookingDto>>();
     }

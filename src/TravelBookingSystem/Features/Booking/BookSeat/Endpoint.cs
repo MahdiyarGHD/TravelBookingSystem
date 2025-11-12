@@ -32,6 +32,7 @@ public class Endpoint : ICarterModule
                     
                     return Results.Ok((MessageContract<string>)bookingResult.Result.ToString());
                 })
+            .WithSummary("Reserve a seat for a passenger")
             .AddEndpointFilter<EndpointValidatorFilter<BookSeatRequest>>()
             .Produces<MessageContract<string>>();
     }

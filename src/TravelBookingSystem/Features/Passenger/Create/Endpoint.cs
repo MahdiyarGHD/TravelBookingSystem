@@ -29,6 +29,7 @@ public class Endpoint : ICarterModule
                     
                     return Results.Ok((MessageContract<string>)passengerResult.Result.ToString());
                 })
+            .WithSummary("Create a passenger")
             .AddEndpointFilter<EndpointValidatorFilter<CreatePassengerRequest>>()
             .Produces<MessageContract<string>>();
     }
