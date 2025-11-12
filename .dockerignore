@@ -1,0 +1,28 @@
+# Directories
+**/bin/
+**/obj/
+**/out/
+**/TestResults/
+
+# Files
+**/*.md
+**/.git
+**/.gitignore
+**/.vs
+**/.vscode
+**/.idea
+**/.DS_Store
+**/*.user
+**/*.suo
+
+# Docker files
+**/Dockerfile*
+**/docker-compose*
+**/.dockerignore
+
+# Test projects build artifacts
+**/TravelBookingSystem.Tests/bin/
+**/TravelBookingSystem.Tests/obj/
+**/TravelBookingSystem.IntegrationTests/bin/
+**/TravelBookingSystem.IntegrationTests/obj/
+

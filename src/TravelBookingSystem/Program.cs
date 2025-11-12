@@ -1,6 +1,8 @@
 using Carter;
 using ServiceCollector.Core;
 using TravelBookingSystem.Common.Extensions;
+using TravelBookingSystem.Common.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,6 +17,12 @@ builder.Services.AddCarter();
 builder.Services.AddServiceDiscovery();
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<TravelBookingDbContext>();
+    dbContext.Database.Migrate();
+}
 
 if (app.Environment.IsDevelopment())
 {
